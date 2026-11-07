@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sony cameras serve their control APIs over plain HTTP on the local network (e.g. 192.168.122.1:8080)
+  and their addresses are not known in advance, so cleartext must be allowed. The app only ever
+  connects to camera / bridge addresses the user discovered or typed; it makes no internet requests.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

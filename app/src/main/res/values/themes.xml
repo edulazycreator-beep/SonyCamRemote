@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="cinema_background">#FF090B0F</color>
+    <color name="cinema_accent">#FFE8A23A</color>
+
+    <style name="Theme.SonyCamRemote" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/cinema_background</item>
+        <item name="android:statusBarColor">@color/cinema_background</item>
+        <item name="android:navigationBarColor">@color/cinema_background</item>
+    </style>
+</resources>

@@ -1,0 +1,85 @@
+name: Android Release
+
+# Push a tag like v1.2.0 to publish a signed APK + AAB as a GitHub Release.
+on:
+  push:
+    tags: [ "v*.*.*" ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version name (e.g. 1.2.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Resolve version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then V="${{ github.event.inputs.version }}"; else V="${GITHUB_REF_NAME#v}"; fi
+          # versionCode = MAJOR*10000 + MINOR*100 + PATCH (e.g. 1.2.3 -> 10203)
+          IFS=. read -r MA MI PA <<< "$V"
+          echo "VERSION_NAME=$V" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$(( ${MA:-0} * 10000 + ${MI:-0} * 100 + ${PA:-0} ))" >> "$GITHUB_ENV"
+
+      - name: Check signing secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          for v in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then echo "::error::Missing secret for $v. See docs/SIGNING.md"; exit 1; fi
+          done
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          echo "SIGNING_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Test
+        run: chmod +x gradlew && ./gradlew --stacktrace :camera-engine:test :app:testReleaseUnitTest
+
+      - name: Build signed APK and AAB
+        env:
+          SIGNING_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: >
+          ./gradlew --stacktrace
+          -PappVersionCode=$VERSION_CODE -PappVersionName=$VERSION_NAME
+          :app:assembleRelease :app:bundleRelease
+
+      - name: Rename outputs
+        run: |
+          mkdir dist
+          cp app/build/outputs/apk/release/*.apk "dist/SonyCamRemote-$VERSION_NAME.apk"
+          cp app/build/outputs/bundle/release/*.aab "dist/SonyCamRemote-$VERSION_NAME.aab"
+          (cd dist && sha256sum * > SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SonyCamRemote-${{ env.VERSION_NAME }}-release
+          path: dist/*
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION_NAME }}
+          name: SonyCam Remote ${{ env.VERSION_NAME }}
+          files: dist/*
+          generate_release_notes: true
+          body: |
+            Install the APK on Android 8.0+ (enable "Install unknown apps").
+            Camera compatibility is listed in docs/COMPATIBILITY.md — only models with recorded hardware test runs are marked verified.

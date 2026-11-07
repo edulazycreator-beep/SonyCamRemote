@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Original mark: an aperture ring with a record dot. Not a Sony logo. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#E8A23A"
+        android:strokeWidth="5"
+        android:pathData="M54,30 A24,24 0 1,1 53.99,30 Z" />
+    <path
+        android:fillColor="#F5F5F5"
+        android:pathData="M54,44 A10,10 0 1,1 53.99,44 Z" />
+    <path
+        android:fillColor="#ED5A5A"
+        android:pathData="M74,30 A5,5 0 1,1 73.99,30 Z" />
+</vector>
