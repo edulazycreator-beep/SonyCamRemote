@@ -197,10 +197,12 @@ private fun TopStatusBar(
                 StatusChip("$it%", if (it <= 15) Cinema.Error else Cinema.TextPrimary, Icons.Filled.BatteryStd)
             }
             state.storage?.let { st ->
+                val shots = st.remainingShots
+                val recSeconds = st.remainingRecordSeconds
                 val text = when {
                     !st.present -> "NO CARD"
-                    st.remainingShots != null -> "${st.remainingShots}"
-                    st.remainingRecordSeconds != null -> "${st.remainingRecordSeconds / 60}m"
+                    shots != null -> "$shots"
+                    recSeconds != null -> "${recSeconds / 60}m"
                     else -> "CARD"
                 }
                 StatusChip(text, if (st.present) Cinema.TextPrimary else Cinema.Error, Icons.Filled.SdCard)
